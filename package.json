@@ -1,0 +1,53 @@
+{
+  "name": "kingdom",
+  "version": "0.1.0",
+  "description": "The reward system for dingn games: account XP and levels, honors, badge coins, the coin ledger, and the 3D kingdom players build with their coins.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "exports": {
+    "./rewards": {
+      "types": "./src/rewards.d.mts",
+      "default": "./src/rewards.mjs"
+    },
+    "./levels": {
+      "types": "./src/levels.d.mts",
+      "default": "./src/levels.mjs"
+    },
+    "./honors": {
+      "types": "./src/honors.d.mts",
+      "default": "./src/honors.mjs"
+    },
+    "./coins": {
+      "types": "./src/coins.d.mts",
+      "default": "./src/coins.mjs"
+    },
+    "./ledger": {
+      "types": "./src/ledger.d.mts",
+      "default": "./src/ledger.mjs"
+    },
+    "./kingdom": {
+      "types": "./src/kingdom.d.mts",
+      "default": "./src/kingdom.mjs"
+    },
+    "./scene": "./src/scene/kingdom-scene.ts",
+    "./assets/*": "./assets/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test"
+  },
+  "peerDependencies": {
+    "three": ">=0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@types/three": "0.187.0",
+    "three": "0.187.0",
+    "typescript": "^5"
+  }
+}
