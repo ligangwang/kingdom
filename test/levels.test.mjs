@@ -37,7 +37,10 @@ test("honors take a numeral for each level within them", () => {
   assert.equal(roman(19), "XIX");
   assert.deepEqual(honorOf(1), { tier: "bronze", title: "Wanderer", rank: 1 });
   assert.equal(honorName(7), "Town lord II");
-  assert.equal(honorName(25, (t) => t.toUpperCase()), "HIGH MONARCH VI");
+  assert.equal(
+    honorName(25, (t) => t.toUpperCase()),
+    "HIGH MONARCH VI",
+  );
   // Each honor opens at a higher level than the one before.
   for (let i = 1; i < HONORS.length; i++)
     assert.ok(HONORS[i].level > HONORS[i - 1].level);

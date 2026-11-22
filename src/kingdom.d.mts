@@ -62,4 +62,7 @@ export type PublicKingdom = {
   hall: StageId;
   tiles: Record<string, string>;
 };
-export function publicKingdom(doc: unknown, level: number): PublicKingdom | null;
+export function publicKingdom(
+  doc: unknown,
+  level: number,
+): PublicKingdom | null;

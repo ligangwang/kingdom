@@ -4,16 +4,16 @@ The reward system for [dingn](https://github.com/ligangwang/dingn) games.
 dingn is the platform: it runs the games, sign-in, storage and the API.
 kingdom decides what players earn and what it opens:
 
-| Module             | What it holds                                                                                         |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Module             | What it holds                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
 | `kingdom/rewards`  | `grant(state, event)`: the one call a host makes when a player earns something, and the reward kinds |
-| `kingdom/levels`   | The XP curve, account levels and the daily cap on play XP                                             |
-| `kingdom/honors`   | Honors (Wanderer … High monarch) with their numerals and metals                                       |
-| `kingdom/coins`    | What badges pay in coins and XP, and the caps that keep a cheating game from printing coins           |
-| `kingdom/ledger`   | Pure functions over a player's rewards document: badges, purchases, coins for play, the wallet        |
-| `kingdom/kingdom`  | The kingdom's stages, buildings and building rules, and the views a page or a visitor sees            |
-| `kingdom/scene`    | The 3D island, drawn with three.js (TypeScript source; the host bundles it)                           |
-| `kingdom/assets/*` | The kingdom's models and textures, with `kingdom/CREDITS.md`                                          |
+| `kingdom/levels`   | The XP curve, account levels and the daily cap on play XP                                            |
+| `kingdom/honors`   | Honors (Wanderer … High monarch) with their numerals and metals                                      |
+| `kingdom/coins`    | What badges pay in coins and XP, and the caps that keep a cheating game from printing coins          |
+| `kingdom/ledger`   | Pure functions over a player's rewards document: badges, purchases, coins for play, the wallet       |
+| `kingdom/kingdom`  | The kingdom's stages, buildings and building rules, and the views a page or a visitor sees           |
+| `kingdom/scene`    | The 3D island, drawn with three.js (TypeScript source; the host bundles it)                          |
+| `kingdom/assets/*` | The kingdom's models and textures, with `kingdom/CREDITS.md`                                         |
 
 Everything in `src/*.mjs` is a pure function over plain documents, so the
 host keeps its own storage and transactions.
@@ -58,10 +58,10 @@ total(out.granted, "coins"); // 50
 
 Events today:
 
-| Event   | Fields           | Granted by                                                          |
-| ------- | ---------------- | ------------------------------------------------------------------- |
-| `badge` | `game`, `badge`  | coins for the badge's tier, its XP, and any new level and honor     |
-| `earn`  | `game`, `coins`  | coins for play (1–10 at a time, within the game's daily allowance) |
+| Event   | Fields          | Granted by                                                         |
+| ------- | --------------- | ------------------------------------------------------------------ |
+| `badge` | `game`, `badge` | coins for the badge's tier, its XP, and any new level and honor    |
+| `earn`  | `game`, `coins` | coins for play (1–10 at a time, within the game's daily allowance) |
 
 ## Adding a reward
 

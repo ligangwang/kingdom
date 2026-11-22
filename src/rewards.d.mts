@@ -8,7 +8,13 @@ export type RewardState = {
   player: Record<string, any> | null | undefined;
 };
 export type Granted =
-  | { reward: "coins"; coins: number; new: boolean; balance: number; left?: number }
+  | {
+      reward: "coins";
+      coins: number;
+      new: boolean;
+      balance: number;
+      left?: number;
+    }
   | { reward: "xp"; xp: number }
   | { reward: "level"; from: number; to: number }
   | { reward: "honor"; level: number; title: string; tier: string }
@@ -32,4 +38,8 @@ export function grant(
   event: RewardEvent,
   options?: { now?: string; name?: string; kinds?: RewardKind[] },
 ): { rewards: any; player: any; granted: Granted[] };
-export function total(granted: Granted[], reward: string, field?: string): number;
+export function total(
+  granted: Granted[],
+  reward: string,
+  field?: string,
+): number;

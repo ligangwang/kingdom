@@ -112,7 +112,10 @@ export function grant(
 ) {
   const listening = kinds.filter((k) => k.on.includes(event?.type));
   if (!listening.length) throw new RewardError(400, "unknown-event");
-  const before = { rewards: state?.rewards ?? null, player: state?.player ?? null };
+  const before = {
+    rewards: state?.rewards ?? null,
+    player: state?.player ?? null,
+  };
   let current = before;
   const granted = [];
   for (const kind of listening) {
