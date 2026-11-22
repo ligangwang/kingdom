@@ -21,8 +21,9 @@ Rules for changes here:
 - **Every change is a new version.** Raise `version` in `package.json`
   (patch for a fix, minor for a new reward or rule, major for a change dingn
   must adapt to; see README.md). Merging publishes it as a GitHub release
-  (`v<version>` and `kingdom-<version>.tgz`); then point dingn's `kingdom`
-  dependency at that release. dingn's admin Rewards page shows the version.
+  (`v<version>` and `kingdom-<version>.tgz`) and sends it to dingn for
+  review; an admin approves it on dingn's Rewards page
+  (`/admin/rewards/`), which installs and deploys it.
 - Run `npm run verify` (typecheck and tests) before opening a PR.
 
 ## Game development resources

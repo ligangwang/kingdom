@@ -51,8 +51,12 @@ Every change that reaches dingn is a new version
 2. Merge it. The Release workflow runs the checks, tags `v<version>` and
    publishes a GitHub release with notes and the package file
    `kingdom-<version>.tgz`.
-3. In dingn, install it:
-   `npm install https://github.com/ligangwang/kingdom/releases/download/v<version>/kingdom-<version>.tgz`.
+3. The workflow sends the version to dingn for review, like a game upload.
+   It waits on dingn's admin Rewards page (`/admin/rewards/`) until an
+   admin approves it there or with a review key; approving installs it on
+   dingn's main and deploys the site. Sending needs the repository secret
+   `DINGN_UPLOAD_KEY`: an upload key (from `/developers/games/`) of an
+   account that is a dingn admin.
 
 ## Granting rewards
 
