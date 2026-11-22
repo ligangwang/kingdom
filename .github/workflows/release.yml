@@ -1,10 +1,10 @@
 name: Release
 
 # Publishes each new version in package.json as a GitHub release: a vX.Y.Z
-# tag and the package file (kingdom-X.Y.Z.tgz) that dingn installs. Then it
-# sends the version to dingn for review, like a game upload: it waits on
-# dingn's admin Rewards page until an admin approves it, which installs it
-# and deploys the site.
+# tag, the package file (kingdom-X.Y.Z.tgz) and the plugin bundle
+# (kingdom-X.Y.Z.zip). Then it uploads the bundle to dingn, like a game: it
+# waits on dingn's admin Rewards page until an admin approves it, which makes
+# it live with no rebuild.
 on:
   push:
     branches: [main]
@@ -36,37 +36,40 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ github.token }}
-      - if: steps.version.outputs.released != 'true'
-        run: npm ci
+      - run: npm ci
       - if: steps.version.outputs.released != 'true'
         run: npm run verify
+      - name: Build the plugin bundle
+        run: npm run build:plugin -- --zip
       - name: Publish the release
         if: steps.version.outputs.released != 'true'
         run: |
           npm pack
           gh release create "v${{ steps.version.outputs.version }}" \
             "kingdom-${{ steps.version.outputs.version }}.tgz" \
+            "dist/kingdom-${{ steps.version.outputs.version }}.zip" \
             --target "$GITHUB_SHA" \
             --title "kingdom ${{ steps.version.outputs.version }}" \
             --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
-      # Every run sends the current version, even one released earlier, so a
-      # send that failed (or ran before the secret was set) is retried by
+      # Every run uploads the current version, even one released earlier, so
+      # an upload that failed (or ran before the secret was set) is retried by
       # running this workflow again. dingn ignores a version it already has.
-      - name: Send the version to dingn for review
+      - name: Upload the bundle to dingn for review
         env:
-          # An upload key of a dingn admin (created on /developers/games/).
+          # An upload key of a dingn admin who is also a developer (made on
+          # dingn's API keys page, /developers/keys/).
           DINGN_UPLOAD_KEY: ${{ secrets.DINGN_UPLOAD_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           if [ -z "$DINGN_UPLOAD_KEY" ]; then
-            echo "::warning::No DINGN_UPLOAD_KEY secret: v$VERSION was not sent to dingn for review."
+            echo "::warning::No DINGN_UPLOAD_KEY secret: v$VERSION was not uploaded to dingn."
             exit 0
           fi
           curl --fail-with-body --silent --show-error --retry 3 \
             -H "Authorization: Bearer $DINGN_UPLOAD_KEY" \
-            -H "Content-Type: application/json" \
-            --data "{\"system\":\"kingdom\",\"version\":\"$VERSION\"}" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@dist/kingdom-$VERSION.zip" \
             https://dingn.com/api/rewards/upload
-          echo "Sent v$VERSION to dingn for review: https://dingn.com/admin/rewards/" >> "$GITHUB_STEP_SUMMARY"
+          echo "Uploaded v$VERSION to dingn for review: https://dingn.com/admin/rewards/" >> "$GITHUB_STEP_SUMMARY"

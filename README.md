@@ -71,14 +71,35 @@ Every change that reaches dingn is a new version
    CI fails a pull request that changes `src/`, `assets/` or `package.json`
    with a version that is already released.
 2. Merge it. The Release workflow runs the checks, tags `v<version>` and
-   publishes a GitHub release with notes and the package file
-   `kingdom-<version>.tgz`.
-3. The workflow sends the version to dingn for review, like a game upload.
-   It waits on dingn's admin Rewards page (`/admin/rewards/`) until an
-   admin approves it there or with a review key; approving installs it on
-   dingn's main and deploys the site. Sending needs the repository secret
-   `DINGN_UPLOAD_KEY`: an upload key (from `/developers/games/`) of an
-   account that is a dingn admin.
+   publishes a GitHub release with notes, the package file
+   `kingdom-<version>.tgz` and the plugin bundle `kingdom-<version>.zip`.
+3. The workflow uploads the plugin bundle to dingn, like a game upload. It
+   waits on dingn's admin Rewards page (`/admin/rewards/`) until an admin
+   approves it there or with a review key. Approving makes it the live
+   version: dingn's server and pages load it within about a minute, with no
+   rebuild. Uploading needs one repository secret, `DINGN_UPLOAD_KEY`: an
+   upload key (from dingn's API keys page, `/developers/keys/`) of an
+   account that is a dingn admin and a developer.
+
+## The plugin bundle
+
+dingn loads the kingdom at run time, like a game, from the bundle that
+`npm run build:plugin` makes in `dist/plugin/` (`-- --zip` zips it):
+
+| File              | What it is                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reward.json`     | The system (`kingdom`), its version and the plugin API (`PLUGIN_API` in `src/rules.mjs`)                                                              |
+| `rules.mjs`       | Every rule module in one file with no imports (`src/rules.mjs`): `rewards`, `levels`, `honors`, `coins`, `ledger`, `kingdom`. dingn's server runs it. |
+| `ui.js`, chunks   | The pages, with their own React and three (`src/ui/mount.tsx`): `mountKingdomPage`, `mountKingdomVisit`, `mountKingdomCard`                           |
+| `kingdom.css`     | The pages' styles                                                                                                                                     |
+| `assets/kingdom/` | The models, land textures and sky                                                                                                                     |
+
+The mount functions take a host of plain values (`PluginHost`): words, links
+and a `navigate` function, a coin picture URL, the API and where the assets
+are served. dingn also installs this package from its GitHub release, as the
+copy it falls back on when no version has been approved yet or the live one
+can't load. Raise `PLUGIN_API` (a major version) when a change needs dingn
+to adapt.
 
 ## Granting rewards
 

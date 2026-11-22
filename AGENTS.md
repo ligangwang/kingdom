@@ -8,7 +8,8 @@ kingdom is the reward system for dingn, the game platform
 (`ligangwang/dingn`). dingn runs the games, sign-in, storage and API; this
 package decides what players earn and what it opens: account XP and levels,
 honors, badge coins, the coin ledger, and the 3D kingdom they build with
-their coins. dingn installs a released version (see README.md).
+their coins. dingn loads it at run time as a plugin, like a game (see
+README.md, "The plugin bundle").
 
 Rules for changes here:
 
@@ -17,7 +18,12 @@ Rules for changes here:
 - **The pages are in `src/ui`** (React): the build page, a visit and the
   account card. They reach the host only through `KingdomHost`
   (`src/ui/host.ts`): no host imports, routes or API URLs, and every word
-  goes through `host.t` so dingn's language packs translate it.
+  goes through `host.t` so dingn's language packs translate it. dingn draws
+  them through `src/ui/mount.tsx`, which gives them plain values
+  (`PluginHost`), never dingn's own React components.
+- **The rules must run anywhere.** `src/rules.mjs` gathers them into the
+  plugin's `rules.mjs`, which dingn's server and pages import on their own:
+  no imports outside `src/`, and no Node or browser APIs.
 - **One home for each rule.** dingn must import a rule from here, never copy
   it, so the page and the server can't disagree.
 - **New rewards are new reward kinds** in `src/rewards.mjs` (see README.md),
@@ -25,9 +31,10 @@ Rules for changes here:
 - **Every change is a new version.** Raise `version` in `package.json`
   (patch for a fix, minor for a new reward or rule, major for a change dingn
   must adapt to; see README.md). Merging publishes it as a GitHub release
-  (`v<version>` and `kingdom-<version>.tgz`) and sends it to dingn for
-  review; an admin approves it on dingn's Rewards page
-  (`/admin/rewards/`), which installs and deploys it.
+  (`v<version>`, `kingdom-<version>.tgz` and the plugin bundle
+  `kingdom-<version>.zip`) and uploads the bundle to dingn; an admin
+  approves it on dingn's Rewards page (`/admin/rewards/`), which makes it
+  live with no rebuild.
 - Run `npm run verify` (typecheck and tests) before opening a PR.
 
 ## Game development resources
@@ -66,7 +73,8 @@ build it, update this section to say so.
 - Honors: `src/honors.mjs`. dingn draws them (the path of honor and the
   avatar ring with its level medal) in `src/components/honor.tsx`.
 - The kingdom's pages: `src/ui` (`KingdomPage`, `KingdomVisit`,
-  `KingdomCard`, `kingdom.css`).
+  `KingdomCard`, `kingdom.css`), drawn for a host by `src/ui/mount.tsx`.
+- The plugin bundle: `scripts/build-plugin.mjs` (`npm run build:plugin`).
 
 ### Earning XP
 

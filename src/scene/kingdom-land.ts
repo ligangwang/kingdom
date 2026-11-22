@@ -6,12 +6,13 @@
 // for the turf up close, one from the air for the hills far off, rock on the
 // steep slopes and sand at the shore. See assets/kingdom/land; the host serves assets/kingdom at /models/kingdom/.
 import * as THREE from "three";
+import { assetBase } from "./asset-base";
 
 /** Half the land's width in world units (about 1 km each way). */
 export const LAND_HALF = 330;
 /** The sea's surface. */
 export const SEA = -1.5;
-const BASE = "/models/kingdom/land/";
+const land = () => `${assetBase()}land/`;
 // The sea lies this way from the town: the side the sun is on.
 const SEA_X = -0.998;
 const SEA_Z = 0.06;
@@ -146,7 +147,7 @@ function picture(file: string) {
     }),
   );
   return new THREE.TextureLoader().load(
-    BASE + file,
+    land() + file,
     arrived,
     undefined,
     arrived,
@@ -347,7 +348,7 @@ export function skyDome(
   haze: THREE.Color,
   onLoad: () => void,
 ) {
-  const map = new THREE.TextureLoader().load(BASE + "sky.jpg", onLoad);
+  const map = new THREE.TextureLoader().load(land() + "sky.jpg", onLoad);
   map.wrapS = THREE.RepeatWrapping;
   map.minFilter = THREE.LinearFilter;
   map.generateMipmaps = false;
