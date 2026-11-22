@@ -14,6 +14,10 @@ Rules for changes here:
 
 - **Pure functions only** in `src/*.mjs`: they take documents and return new
   ones. No Firestore, HTTP or React. dingn loads and saves.
+- **The pages are in `src/ui`** (React): the build page, a visit and the
+  account card. They reach the host only through `KingdomHost`
+  (`src/ui/host.ts`): no host imports, routes or API URLs, and every word
+  goes through `host.t` so dingn's language packs translate it.
 - **One home for each rule.** dingn must import a rule from here, never copy
   it, so the page and the server can't disagree.
 - **New rewards are new reward kinds** in `src/rewards.mjs` (see README.md),
@@ -60,6 +64,8 @@ build it, update this section to say so.
   `BUILDINGS`). dingn's server and its kingdom page both read it.
 - Honors: `src/honors.mjs`. dingn draws them (the path of honor and the
   avatar ring with its level medal) in `src/components/honor.tsx`.
+- The kingdom's pages: `src/ui` (`KingdomPage`, `KingdomVisit`,
+  `KingdomCard`, `kingdom.css`).
 
 ### Earning XP
 

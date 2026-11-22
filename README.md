@@ -13,10 +13,30 @@ kingdom decides what players earn and what it opens:
 | `kingdom/ledger`   | Pure functions over a player's rewards document: badges, purchases, coins for play, the wallet       |
 | `kingdom/kingdom`  | The kingdom's stages, buildings and building rules, and the views a page or a visitor sees           |
 | `kingdom/scene`    | The 3D island, drawn with three.js (TypeScript source; the host bundles it)                          |
+| `kingdom/ui`       | The kingdom's pages as React components: the build page, a visit to another player, the account card |
 | `kingdom/assets/*` | The kingdom's models and textures, with `kingdom/CREDITS.md`                                         |
 
 Everything in `src/*.mjs` is a pure function over plain documents, so the
 host keeps its own storage and transactions.
+
+## The pages
+
+`kingdom/ui` draws the kingdom's pages; the host passes a `KingdomHost`
+(`src/ui/host.ts`) with its words, links, coin picture and API, and keeps
+sign-in, routes, storage and translations:
+
+```tsx
+import { KingdomPage, KingdomVisit, KingdomCard } from "kingdom/ui";
+import "kingdom/ui/kingdom.css";
+
+<KingdomPage host={host} player={uid} ready={ready} />  // the build page
+<KingdomVisit host={host} kingdom={publicKingdom} label="Ada’s kingdom" />
+<KingdomCard host={host} />                             // on the account page
+```
+
+`host.t` gets English text, with values already in it
+(`` `Level ${level} · ${hall}` ``), so a host translates it with its own
+patterns.
 
 ## Using it in dingn
 
@@ -28,7 +48,9 @@ registry token is needed in its Docker build:
 ```
 
 - The server imports the `.mjs` modules directly.
-- Next.js bundles `kingdom/scene` (`transpilePackages: ["kingdom"]`).
+- Next.js bundles `kingdom/scene` and `kingdom/ui`
+  (`transpilePackages: ["kingdom"]`); dingn's `src/components/kingdom-host.tsx`
+  gives the pages its words, links and API.
 - The models are copied from `node_modules/kingdom/assets/kingdom` to
   `public/models/kingdom` before each build, and the scene loads them from
   `/models/kingdom/`.
