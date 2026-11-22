@@ -51,8 +51,10 @@ jobs:
             --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
+      # Every run sends the current version, even one released earlier, so a
+      # send that failed (or ran before the secret was set) is retried by
+      # running this workflow again. dingn ignores a version it already has.
       - name: Send the version to dingn for review
-        if: steps.version.outputs.released != 'true'
         env:
           # An upload key of a dingn admin (created on /developers/games/).
           DINGN_UPLOAD_KEY: ${{ secrets.DINGN_UPLOAD_KEY }}
