@@ -9,6 +9,7 @@
 // the watchtower, the fountain and the balloons are drawn here, in
 // photographed stone and tiles.
 import * as THREE from "three";
+import { assetBase } from "./asset-base";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import type { StageId } from "../kingdom.mjs";
@@ -133,7 +134,6 @@ type Loaded = {
 };
 const cache = new Map<ModelName, Loaded>();
 const loads = new Map<string, Promise<void>>();
-const BASE = "/models/kingdom/";
 
 function load(names: ModelName[], key: string, step?: () => void) {
   let p = loads.get(key);
@@ -142,7 +142,7 @@ function load(names: ModelName[], key: string, step?: () => void) {
   p = Promise.all(
     names.map(async (name) => {
       const gltf = await loader
-        .loadAsync(`${BASE}${FILES[name]}.glb`)
+        .loadAsync(`${assetBase()}${FILES[name]}.glb`)
         .finally(step);
       const root = gltf.scene;
       const fit = FIT[name];
@@ -271,7 +271,7 @@ const photos: Record<string, Photo> = {};
 async function loadPhotos(step?: () => void) {
   const loader = new THREE.TextureLoader();
   const get = async (file: string, colour: boolean) => {
-    const t = await loader.loadAsync(`${BASE}land/${file}.jpg`).finally(step);
+    const t = await loader.loadAsync(`${assetBase()}land/${file}.jpg`).finally(step);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     if (colour) t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
