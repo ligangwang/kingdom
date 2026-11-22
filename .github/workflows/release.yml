@@ -1,0 +1,50 @@
+name: Release
+
+# Publishes each new version in package.json as a GitHub release: a vX.Y.Z
+# tag and the package file (kingdom-X.Y.Z.tgz) that dingn installs.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Read the version
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "v$version is already released."
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - if: steps.version.outputs.released != 'true'
+        run: npm ci
+      - if: steps.version.outputs.released != 'true'
+        run: npm run verify
+      - name: Publish the release
+        if: steps.version.outputs.released != 'true'
+        run: |
+          npm pack
+          gh release create "v${{ steps.version.outputs.version }}" \
+            "kingdom-${{ steps.version.outputs.version }}.tgz" \
+            --target "$GITHUB_SHA" \
+            --title "kingdom ${{ steps.version.outputs.version }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

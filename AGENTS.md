@@ -8,7 +8,7 @@ kingdom is the reward system for dingn, the game platform
 (`ligangwang/dingn`). dingn runs the games, sign-in, storage and API; this
 package decides what players earn and what it opens: account XP and levels,
 honors, badge coins, the coin ledger, and the 3D kingdom they build with
-their coins. dingn installs it pinned to a commit (see README.md).
+their coins. dingn installs a released version (see README.md).
 
 Rules for changes here:
 
@@ -18,8 +18,11 @@ Rules for changes here:
   it, so the page and the server can't disagree.
 - **New rewards are new reward kinds** in `src/rewards.mjs` (see README.md),
   so dingn picks them up without code changes.
-- After a change merges, bump the `kingdom` dependency in dingn's
-  `package.json` to the new commit.
+- **Every change is a new version.** Raise `version` in `package.json`
+  (patch for a fix, minor for a new reward or rule, major for a change dingn
+  must adapt to; see README.md). Merging publishes it as a GitHub release
+  (`v<version>` and `kingdom-<version>.tgz`); then point dingn's `kingdom`
+  dependency at that release. dingn's admin Rewards page shows the version.
 - Run `npm run verify` (typecheck and tests) before opening a PR.
 
 ## Game development resources
