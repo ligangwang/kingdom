@@ -65,7 +65,14 @@ export function awardBadge(doc, game, badge, now = new Date().toISOString()) {
     coins,
     at: now,
   };
-  current.games[game] = earned + coins;
+  // An own property even for a game id such as "__proto__", which a plain
+  // assignment would hand to the prototype setter, escaping the cap.
+  Object.defineProperty(current.games, game, {
+    value: earned + coins,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
   current.coins += coins;
   return {
     doc: current,

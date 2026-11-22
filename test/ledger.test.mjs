@@ -35,6 +35,16 @@ test("a badge pays once, and a game's coins are capped", () => {
   // Another game has its own cap.
   step = ledger.awardBadge(step.doc, "pop", badge("x"), "2026-01-04");
   assert.equal(step.result.coins, 25);
+  // A game id such as "__proto__" is capped like any other.
+  let proto = null;
+  for (let i = 0; i < 12; i++)
+    proto = ledger.awardBadge(
+      proto?.doc ?? null,
+      "__proto__",
+      badge(`d${i}`, { tier: "diamond" }),
+    );
+  assert.equal(proto.doc.coins, MAX_GAME_COINS);
+  assert.equal(Object.hasOwn(proto.doc.games, "__proto__"), true);
   // A game id never reads Object.prototype.
   step = ledger.awardBadge(step.doc, "constructor", badge("a"), "2026-01-05");
   assert.equal(step.result.coins, 25);
