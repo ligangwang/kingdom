@@ -1,13 +1,19 @@
 // The kingdom: a small 3D island on every player's account that grows with
-// the account level. Players build on it with coins. The host's server and
-// its kingdom page both read this file, so the rules the page shows are the
-// rules the server enforces.
+// the account level. Each stage the level opens comes with its hall and a
+// few basic buildings, free (STARTERS); players add more with coins. The
+// host's server and its kingdom page both read this file, so the rules the
+// page shows are the rules the server enforces.
 //
 // A player's kingdom is kept in their rewards document (see ledger.mjs), next
 // to their coins, so buying a building and paying for it is one write:
-//   kingdom: { hall: "camp", tiles: { "<x>,<y>": "<building id>" } }
+//   kingdom: { hall: "camp", tiles: { "<x>,<y>": "<building id>" },
+//              granted: ["camp", …] }
+// `granted` lists the stages whose free buildings have been placed, so each
+// stage gives them once, even if the player moves them.
 // The hall's grounds are the 3 x 3 tiles around 0,0 (HALL_RADIUS), where it
-// grows from a campfire into a palace; nothing else can be built there.
+// grows from a campfire into a palace as the level rises; nothing else can
+// be built there.
+
 import { levelProgress } from "./levels.mjs";
 
 /** Kingdom stages, by the account level that opens each one. */
@@ -31,9 +37,8 @@ const b = (id, stage, coins, max, en, zh, extra = {}) => ({
   title: { en, zh },
 });
 /**
- * What players can build. `stage` is the hall they need first. A hall
- * building (`hall: true`) upgrades the hall to its stage instead of taking a
- * tile; `max` is how many one kingdom can have.
+ * What players can buy. `stage` is the stage that opens it; `max` is how
+ * many one kingdom can have, the free ones included.
  */
 export const BUILDINGS = [
   b("path", "camp", 2, 40, "Stone path", "石板路"),
@@ -41,25 +46,82 @@ export const BUILDINGS = [
   b("flowers", "camp", 5, 20, "Flower bed", "花坛"),
   b("cottage", "camp", 20, 6, "Thatched cottage", "茅草屋"),
   b("farm", "camp", 15, 6, "Wheat field", "麦田"),
-  b("hall-village", "village", 100, 1, "Village hall", "村公所", {
-    hall: true,
-  }),
   b("well", "village", 30, 1, "Well", "水井"),
   b("market", "village", 40, 3, "Market stall", "集市摊位"),
   b("windmill", "village", 120, 1, "Windmill", "风车"),
-  b("hall-town", "town", 250, 1, "Great hall", "大会堂", { hall: true }),
   b("house", "town", 60, 6, "Town house", "城镇住宅"),
   b("forge", "town", 100, 1, "Blacksmith", "铁匠铺"),
   b("tower", "town", 150, 2, "Watchtower", "瞭望塔"),
-  b("hall-city", "city", 500, 1, "Keep", "城堡主楼", { hall: true }),
   b("chapel", "city", 200, 1, "Chapel", "礼拜堂"),
   b("fountain", "city", 250, 1, "Fountain", "喷泉"),
   b("clock", "city", 300, 1, "Clock tower", "钟楼"),
-  b("hall-kingdom", "kingdom", 800, 1, "Castle", "城堡", { hall: true }),
   b("statue", "kingdom", 300, 2, "Knight statue", "骑士雕像"),
-  b("hall-capital", "capital", 1200, 1, "Palace", "宫殿", { hall: true }),
 ];
-/** The hall's look at each stage (camp's campfire is free). */
+/**
+ * What the hall cost in coins before halls came free with the level. A
+ * player who paid for one gets those coins back once (see `hallRefund`).
+ */
+export const OLD_HALL_COINS = {
+  village: 100,
+  town: 250,
+  city: 500,
+  kingdom: 800,
+  capital: 1200,
+};
+
+/**
+ * The buildings each stage gives for free when the level opens it, as
+ * [building, x, y]: the basic layout of a settlement (paths out from the
+ * hall, homes, a field, a well), leaving room for the player to decorate.
+ * A spot already taken moves to the nearest free tile.
+ */
+export const STARTERS = {
+  camp: [
+    ["path", 0, 2],
+    ["path", 0, -2],
+    ["path", 2, 0],
+    ["path", -2, 0],
+    ["cottage", 2, 2],
+    ["farm", -2, 2],
+    ["tree", -2, -2],
+    ["tree", 2, -2],
+  ],
+  village: [
+    ["path", 3, 0],
+    ["path", 0, 3],
+    ["well", 2, 1],
+    ["market", 3, 1],
+    ["flowers", 1, 2],
+  ],
+  town: [
+    ["path", -3, 0],
+    ["path", 0, -3],
+    ["house", -3, 2],
+    ["house", 2, -3],
+    ["forge", -3, -2],
+  ],
+  city: [
+    ["path", 4, 0],
+    ["path", 0, 4],
+    ["fountain", 3, 3],
+    ["house", 4, -2],
+  ],
+  kingdom: [
+    ["path", -4, 0],
+    ["path", 0, -4],
+    ["statue", -1, -4],
+    ["statue", 1, -4],
+  ],
+  capital: [
+    ["path", 5, 0],
+    ["path", 0, 5],
+    ["flowers", 5, 1],
+    ["flowers", 1, 5],
+    ["tree", 5, 5],
+  ],
+};
+
+/** The hall's look at each stage. */
 export const HALL_TITLES = {
   camp: { en: "Campfire", zh: "篝火营地" },
   village: { en: "Village hall", zh: "村公所" },
@@ -103,7 +165,75 @@ export function kingdomOf(doc) {
   return {
     hall: STAGE_IDS.includes(k?.hall) ? k.hall : "camp",
     tiles: { ...(k?.tiles ?? {}) },
+    granted: Array.isArray(k?.granted)
+      ? STAGE_IDS.filter((id) => k.granted.includes(id))
+      : [],
   };
+}
+
+/**
+ * The kingdom with what the level has opened: the hall raised to the open
+ * stage, and the free buildings of every open stage not yet given. Returns
+ * the same object when nothing changes.
+ */
+export function settle(kingdom, level) {
+  const open = stageFor(level);
+  if (!open) return kingdom;
+  const due = STAGES.filter(
+    (s) => s.level <= open.level && !kingdom.granted.includes(s.id),
+  );
+  if (!due.length && rank(kingdom.hall) >= rank(open.id)) return kingdom;
+  const next = {
+    hall: rank(kingdom.hall) >= rank(open.id) ? kingdom.hall : open.id,
+    tiles: { ...kingdom.tiles },
+    granted: [...kingdom.granted],
+  };
+  for (const stage of due) {
+    for (const [id, x, y] of STARTERS[stage.id]) {
+      const def = building(id);
+      const count = Object.values(next.tiles).filter((b) => b === id).length;
+      if (count >= def.max) continue;
+      const spot = freeTileNear(next.tiles, open.size, x, y);
+      if (spot) next.tiles[tileKey(...spot)] = id;
+    }
+    next.granted.push(stage.id);
+  }
+  next.granted = STAGE_IDS.filter((id) => next.granted.includes(id));
+  return next;
+}
+
+/** The free tile nearest x,y on land of `size`, or null if it is full. */
+function freeTileNear(tiles, size, x, y) {
+  const { lo, hi } = landBounds(size);
+  const free = (a, b) =>
+    onLand(size, a, b) && !isHallTile(a, b) && !tiles[tileKey(a, b)];
+  if (free(x, y)) return [x, y];
+  let best = null;
+  let bestD = Infinity;
+  for (let a = lo; a <= hi; a++)
+    for (let b = lo; b <= hi; b++) {
+      const d = (a - x) ** 2 + (b - y) ** 2;
+      if (d < bestD && free(a, b)) {
+        best = [a, b];
+        bestD = d;
+      }
+    }
+  return best;
+}
+
+/**
+ * Coins owed back to a player who bought hall upgrades before halls came
+ * free: what they paid, the first time their kingdom is settled (a kingdom
+ * kept before then has no `granted`).
+ */
+export function hallRefund(doc) {
+  const k = doc?.kingdom;
+  if (!k || Array.isArray(k.granted)) return 0;
+  const hall = rank(kingdomOf(doc).hall);
+  return STAGE_IDS.slice(1, hall + 1).reduce(
+    (sum, id) => sum + OLD_HALL_COINS[id],
+    0,
+  );
 }
 
 export class KingdomError extends Error {
@@ -115,8 +245,8 @@ export class KingdomError extends Error {
 }
 
 /**
- * Builds `id` on tile x,y (a hall needs no tile) for a player at `level`
- * holding `coins`. Returns the new kingdom and what it cost, or throws a
+ * Builds `id` on tile x,y for a player at `level` holding `coins`. Returns
+ * the new kingdom (settled for the level) and what it cost, or throws a
  * KingdomError naming the rule it breaks.
  */
 export function build(kingdom, { id, x, y }, level, coins) {
@@ -125,34 +255,26 @@ export function build(kingdom, { id, x, y }, level, coins) {
   const open = stageFor(level);
   if (!open) throw new KingdomError("locked", 403);
   if (rank(def.stage) > rank(open.id)) throw new KingdomError("level", 403);
-  const next = { hall: kingdom.hall, tiles: { ...kingdom.tiles } };
-  if (def.hall) {
-    if (rank(def.stage) <= rank(kingdom.hall))
-      throw new KingdomError("already-built");
-    if (rank(def.stage) !== rank(kingdom.hall) + 1)
-      throw new KingdomError("hall-first");
-    next.hall = def.stage;
-  } else {
-    if (rank(def.stage) > rank(kingdom.hall))
-      throw new KingdomError("hall-first");
-    if (!Number.isInteger(x) || !Number.isInteger(y))
-      throw new KingdomError("invalid-request", 400);
-    if (!onLand(open.size, x, y) || isHallTile(x, y))
-      throw new KingdomError("off-land");
-    const key = tileKey(x, y);
-    if (next.tiles[key]) throw new KingdomError("occupied");
-    const count = Object.values(next.tiles).filter((b) => b === id).length;
-    if (count >= def.max) throw new KingdomError("max");
-    next.tiles[key] = id;
-  }
+  const settled = settle(kingdom, level);
+  const next = { ...settled, tiles: { ...settled.tiles } };
+  if (!Number.isInteger(x) || !Number.isInteger(y))
+    throw new KingdomError("invalid-request", 400);
+  if (!onLand(open.size, x, y) || isHallTile(x, y))
+    throw new KingdomError("off-land");
+  const key = tileKey(x, y);
+  if (next.tiles[key]) throw new KingdomError("occupied");
+  const count = Object.values(next.tiles).filter((b) => b === id).length;
+  if (count >= def.max) throw new KingdomError("max");
+  next.tiles[key] = id;
   if (coins < def.coins) throw new KingdomError("not-enough-coins", 402);
   return { kingdom: next, coins: def.coins };
 }
 
 /** Moves the building on one tile to an empty tile, free. */
-export function move(kingdom, { from, to }, level) {
+export function move(unsettled, { from, to }, level) {
   const open = stageFor(level);
   if (!open) throw new KingdomError("locked", 403);
+  const kingdom = settle(unsettled, level);
   const valid = (t) =>
     Array.isArray(t) && t.length === 2 && t.every(Number.isInteger);
   if (!valid(from) || !valid(to))
@@ -165,7 +287,34 @@ export function move(kingdom, { from, to }, level) {
   if (kingdom.tiles[b]) throw new KingdomError("occupied");
   const tiles = { ...kingdom.tiles, [b]: kingdom.tiles[a] };
   delete tiles[a];
-  return { hall: kingdom.hall, tiles };
+  return { ...kingdom, tiles };
+}
+
+/**
+ * A rewards document with what the level has opened: the kingdom settled
+ * (see `settle`) and, once, the coins paid for halls before they were free.
+ * `gifts` lists the stages whose free buildings this adds; the same
+ * document comes back when nothing changes.
+ */
+export function settleDoc(doc, level) {
+  if (!stageFor(level)) return { doc, gifts: [] };
+  const before = kingdomOf(doc);
+  const kingdom = settle(before, level);
+  if (kingdom === before) return { doc, gifts: [] };
+  const refund = hallRefund(doc);
+  return {
+    doc: {
+      ...(doc ?? {}),
+      ...(refund
+        ? {
+            coins: (doc?.coins ?? 0) + refund,
+            spent: Math.max(0, (doc?.spent ?? 0) - refund),
+          }
+        : {}),
+      kingdom,
+    },
+    gifts: kingdom.granted.filter((id) => !before.granted.includes(id)),
+  };
 }
 
 /**
@@ -175,7 +324,7 @@ export function move(kingdom, { from, to }, level) {
 export function kingdomView(doc, player) {
   const progress = levelProgress(player?.xp ?? 0);
   const stage = stageFor(progress.level);
-  const kingdom = kingdomOf(doc);
+  const kingdom = settle(kingdomOf(doc), progress.level);
   return {
     ...progress,
     stage: stage?.id ?? null,
@@ -187,10 +336,11 @@ export function kingdomView(doc, player) {
 }
 
 /**
- * Builds in a rewards document for a player at `level`. Returns the new
- * document and what it cost, or throws a KingdomError.
+ * Builds in a rewards document for a player at `level`, settling it first.
+ * Returns the new document and what it cost, or throws a KingdomError.
  */
-export function buildIn(doc, request, level) {
+export function buildIn(unsettled, request, level) {
+  const doc = settleDoc(unsettled, level).doc;
   const coins = doc?.coins ?? 0;
   const done = build(kingdomOf(doc), request, level, coins);
   return {
@@ -205,14 +355,23 @@ export function buildIn(doc, request, level) {
 }
 
 /**
+ * Moves a building in a rewards document for a player at `level`, settling
+ * it first. Returns the new document, or throws a KingdomError.
+ */
+export function moveIn(unsettled, request, level) {
+  const doc = settleDoc(unsettled, level).doc;
+  return { ...(doc ?? {}), kingdom: move(kingdomOf(doc), request, level) };
+}
+
+/**
  * Another player's kingdom as built, for visitors: the stage their level
- * opens, the hall and what stands on each tile. Null below the level that
- * founds one. Never their coins.
+ * opens, the hall and what stands on each tile, with what the level has
+ * opened. Null below the level that founds one. Never their coins.
  */
 export function publicKingdom(doc, level) {
   const stage = stageFor(level);
   if (!stage) return null;
-  const kingdom = kingdomOf(doc);
+  const kingdom = settle(kingdomOf(doc), level);
   return {
     stage: stage.id,
     size: stage.size,

@@ -7,15 +7,22 @@ export type BuildingDef = {
   stage: StageId;
   coins: number;
   max: number;
-  hall?: boolean;
   title: Title;
 };
-export type Kingdom = { hall: StageId; tiles: Record<string, string> };
+export type Kingdom = {
+  hall: StageId;
+  tiles: Record<string, string>;
+  granted: StageId[];
+};
 export const STAGES: Stage[];
 export const STAGE_IDS: StageId[];
 export const MIN_LEVEL: number;
 export const BUILDINGS: BuildingDef[];
 export const HALL_TITLES: Record<StageId, Title>;
+export const OLD_HALL_COINS: Record<Exclude<StageId, "camp">, number>;
+export const STARTERS: Record<StageId, [string, number, number][]>;
+export function settle(kingdom: Kingdom, level: number): Kingdom;
+export function hallRefund(doc: unknown): number;
 export function building(id: string): BuildingDef | null;
 export function stageFor(level: number): Stage | null;
 export function landBounds(size: number): { lo: number; hi: number };
@@ -50,12 +57,21 @@ export type KingdomView = {
   tiles: Record<string, string>;
   coins: number;
 };
+export function settleDoc(
+  doc: unknown,
+  level: number,
+): { doc: any; gifts: StageId[] };
 export function kingdomView(doc: unknown, player: unknown): KingdomView;
 export function buildIn(
   doc: unknown,
   request: { id: string; x?: number; y?: number },
   level: number,
-): { doc: Record<string, unknown>; coins: number };
+): { doc: Record<string, any>; coins: number };
+export function moveIn(
+  doc: unknown,
+  request: { from: [number, number]; to: [number, number] },
+  level: number,
+): Record<string, any>;
 export type PublicKingdom = {
   stage: StageId;
   size: number;
