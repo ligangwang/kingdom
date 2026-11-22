@@ -20,11 +20,11 @@ host keeps its own storage and transactions.
 
 ## Using it in dingn
 
-dingn installs a pinned commit, from a tarball so no `git` is needed in its
-Docker build:
+dingn installs a released version, from its GitHub release so no `git` or
+registry token is needed in its Docker build:
 
 ```json
-"kingdom": "https://codeload.github.com/ligangwang/kingdom/tar.gz/<commit>"
+"kingdom": "https://github.com/ligangwang/kingdom/releases/download/v<version>/kingdom-<version>.tgz"
 ```
 
 - The server imports the `.mjs` modules directly.
@@ -32,9 +32,27 @@ Docker build:
 - The models are copied from `node_modules/kingdom/assets/kingdom` to
   `public/models/kingdom` before each build, and the scene loads them from
   `/models/kingdom/`.
+- dingn's admin Rewards page (`/admin/rewards/`) shows the version it runs.
 
-To ship a change: merge it here, then bump the commit in dingn's
-`package.json` and `package-lock.json` (`npm install <tarball url>`).
+## Releasing a version
+
+Every change that reaches dingn is a new version
+([semver](https://semver.org/)):
+
+- **patch** (0.1.1) for a fix,
+- **minor** (0.2.0) for a new reward kind, rule or building,
+- **major** (1.0.0) for a change dingn must adapt to, such as a new event
+  or a renamed export.
+
+1. Raise `version` in `package.json` and `package-lock.json` in the same
+   pull request (`npm version <patch|minor|major> --no-git-tag-version`).
+   CI fails a pull request that changes `src/`, `assets/` or `package.json`
+   with a version that is already released.
+2. Merge it. The Release workflow runs the checks, tags `v<version>` and
+   publishes a GitHub release with notes and the package file
+   `kingdom-<version>.tgz`.
+3. In dingn, install it:
+   `npm install https://github.com/ligangwang/kingdom/releases/download/v<version>/kingdom-<version>.tgz`.
 
 ## Granting rewards
 

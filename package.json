@@ -4,6 +4,10 @@
   "description": "The reward system for dingn games: account XP and levels, honors, badge coins, the coin ledger, and the 3D kingdom players build with their coins.",
   "private": true,
   "type": "module",
+  "files": [
+    "src",
+    "assets"
+  ],
   "engines": {
     "node": ">=20.9.0"
   },
