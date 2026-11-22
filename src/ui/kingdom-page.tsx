@@ -132,7 +132,20 @@ export function KingdomPage({
       : SAMPLE;
   }, [ready, uid, view, own]);
 
+  // Whose kingdom is shown: a reply for a player who has since signed out
+  // or switched accounts is dropped.
+  const current = useRef(uid);
+  current.current = uid;
+
   useEffect(() => {
+    // A new player (or none): forget the last one's kingdom and choices.
+    setView(null);
+    setLoadError(false);
+    setPick(null);
+    setAsk(null);
+    setNote("");
+    scene.current?.showGhost(null);
+    scene.current?.mark(null);
     if (!ready || !uid) return;
     let live = true;
     api
@@ -236,9 +249,11 @@ export function KingdomPage({
 
   async function confirm() {
     if (!ask) return;
+    const asker = uid;
     setBusy(true);
     try {
       const next = await api.build(ask.def.id, ask.x, ask.y);
+      if (current.current !== asker) return;
       done(next);
       setNote(t(`${name(ask.def.title)} built.`));
       if (ask.def.max === 1) setPick(null);
@@ -252,9 +267,12 @@ export function KingdomPage({
     }
   }
   async function doMove(from: [number, number], to: [number, number]) {
+    const mover = uid;
     setBusy(true);
     try {
-      done(await api.move(from, to));
+      const next = await api.move(from, to);
+      if (current.current !== mover) return;
+      done(next);
       setNote("");
     } catch (e) {
       const code = (e as { code?: string }).code ?? "";

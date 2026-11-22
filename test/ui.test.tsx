@@ -96,6 +96,15 @@ it("loads the player's kingdom through the host, with the build panel", async ()
   expect(within(panel).getByRole("button", { name: /Windmill/ })).toBeTruthy();
 });
 
+it("forgets a player's kingdom when they sign out", async () => {
+  const h = host();
+  const { rerender } = render(<KingdomPage host={h} player="me" ready />);
+  expect(await screen.findByText("Your village")).toBeTruthy();
+  rerender(<KingdomPage host={h} player="" ready />);
+  expect(screen.getByText("Build your own kingdom")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Build" })).toBeNull();
+});
+
 it("shows another player's kingdom to visit", () => {
   render(
     <KingdomVisit

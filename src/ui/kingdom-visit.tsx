@@ -69,6 +69,14 @@ export function KingdomVisit({
       cancelled = true;
     };
   }, [near, kingdom]);
+  // Another kingdom, or the same one rebuilt: show it in the scene already here.
+  useEffect(() => {
+    scene.current?.set({
+      size: kingdom.size,
+      hall: kingdom.hall,
+      tiles: kingdom.tiles,
+    });
+  }, [kingdom]);
 
   useEffect(
     () => () => {
